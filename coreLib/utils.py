@@ -2,7 +2,7 @@
 """
 @author: MD.Nazmuddoha Ansary
 """
-# TODO: add execption handling, h5 genaration
+# TODO: add execption handling
 from __future__ import print_function
 from termcolor import colored
 import os
@@ -129,7 +129,7 @@ class DataSet(object):
             dpath=os.path.join(self.test_dir)
         LOG_INFO('Creating DataSet:{}'.format(mode))
         LOG_INFO('Directory:{}'.format(dpath))
-        
+        LOG_INFO('This will take quite some time. Thank you for your patience.')
         if mode!='test': 
             for iden in tqdm(__idens):
                 img_path    =   os.path.join(self.img_dir,'{}.jpg'.format(iden))
@@ -208,4 +208,14 @@ class DataSet(object):
                 missed.append(__filename)
                 LOG_INFO('ERROR:{}'.format(__filename),p_color='red')
 #--------------------------------------------------------------------------------------------------------------------------------------------------
-                      
+def createH5Data(data_paths,counter,save_dir,mode):
+    holder=[]
+    _dpath=os.path.join(save_dir,'{}_{}.h5'.format(mode,counter))
+    LOG_INFO(_dpath)
+    for __path in tqdm(data_paths):
+        data=np.array(imgop.open(__path))
+        data=np.expand_dims(data,axis=0)
+        holder.append(data)
+    _data=np.vstack(holder)
+    saveh5(_dpath,_data) 
+#--------------------------------------------------------------------------------------------------------------------------------------------------

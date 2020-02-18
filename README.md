@@ -6,10 +6,10 @@ Ref: UPWORK
     Author : Erenus Yildiz 
              Md. Nazmuddoha Ansary
                   
-![](/INFO/src_img/python.ico?raw=true )
-![](/INFO/src_img/tensorflow.ico?raw=true)
-![](/INFO/src_img/keras.ico?raw=true)
-![](/INFO/src_img/col.ico?raw=true)
+![](/info/src_img/python.ico?raw=true )
+![](/info/src_img/tensorflow.ico?raw=true)
+![](/info/src_img/keras.ico?raw=true)
+![](/info/src_img/col.ico?raw=true)
 
 # Version and Requirements
 *   numpy==1.18.1
@@ -57,6 +57,15 @@ Change The following Values in ***config.json***:
         }
 
 * run ```python3 create_dataset.py```
+
+![](/info/exec.png?raw=true)
+
+# Information
+* Train Data = 14000 
+* Test Data  = 11
+* Eval Data  = 4000
+* DataSet Size = 8.6 GiB
+* DataSet Creation Time ~= 2228s
 
 **ENVIRONMENT**  
 
