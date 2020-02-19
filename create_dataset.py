@@ -8,7 +8,7 @@ import numpy as np
 import random
 import shutil
 from tqdm import tqdm
-from coreLib.utils import readJson,LOG_INFO,readh5,saveh5,DataSet,createH5Data,create_dir
+from coreLib.utils import readJson,LOG_INFO,DataSet,create_dir,to_tfrecord
 #-----------------------------------------------------Load Config-------
 config_data=readJson('config.json')
 
@@ -27,12 +27,12 @@ class FLAGS:
     ID_START        = config_data['ID_START']
     ID_END          = config_data['ID_END']
 #--------------------------------------------------------------------------
-def genH5(mode,FLAGS):
-    # h5 dir
-    h5_dir=create_dir(os.path.join(FLAGS.DS_DIR,'DataSet'),'H5')
-    mode_dir=create_dir(h5_dir,mode)
-    LOG_INFO("Creating H5s:{}".format(mode_dir))
-    data_dir=os.path.join(FLAGS.DS_DIR,'DataSet',mode)
+
+def genTFRecords(mode,FLAGS):
+    rec_dir=create_dir(FLAGS.DS_DIR,'TFRecords')
+    mode_dir=create_dir(rec_dir,mode)
+    LOG_INFO("Creating TFRecords:{}".format(mode_dir))
+    data_dir=os.path.join(FLAGS.DS_DIR,'DataSet',mode,'images')
     __paths=[os.path.join(data_dir,_file) for _file in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir,_file))]
     random.shuffle(__paths)
     for i in range(0,len(__paths),FLAGS.DATA_COUNT):
@@ -40,25 +40,32 @@ def genH5(mode,FLAGS):
         random.shuffle(image_paths)        
         r_num=i // FLAGS.DATA_COUNT
         if len(image_paths)==FLAGS.DATA_COUNT:
-            createH5Data(image_paths,r_num,mode_dir,mode)
+            to_tfrecord(image_paths,mode_dir,mode,r_num)
         else:
             LOG_INFO('Testing Data Addition:{}'.format(mode))
+            dest_dir=create_dir(os.path.join(FLAGS.DS_DIR,'DataSet','Test'),'Augmented')
+            dest_img=create_dir(dest_dir,'images')
+            dest_mask=create_dir(dest_dir,'masks')
             random.shuffle(image_paths)         
             for __path in tqdm(image_paths):
                 base_name=os.path.basename(__path)
-                dest_path=os.path.join(FLAGS.DS_DIR,'DataSet','Test',base_name)
-                shutil.copy(__path,dest_path)
-                
-
+                img_path=os.path.join(dest_img,base_name)
+                msk_path=os.path.join(dest_mask,base_name)
+                __mpath=str(__path).replace("images","masks")
+                shutil.copy(__path,img_path)
+                shutil.copy(__mpath,msk_path)
+              
 def main(FLAGS):
     st=time.time()
     DS=DataSet(FLAGS)
+    '''
     DS.createMasks()
     DS.create('eval')
     DS.create('test')
     DS.create('train')
-    genH5('Eval',FLAGS)
-    genH5('Train',FLAGS)
+    genTFRecords('Eval',FLAGS)
+    '''
+    genTFRecords('Train',FLAGS)
     LOG_INFO('Time Taken:{}s'.format(round(time.time()-st)))
 
 

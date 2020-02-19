@@ -1,7 +1,9 @@
 # pyWireDetect
 Wire detection using synthetic data and dilated convolutional networks
+
 Ref: UPWORK
-    
+
+
     Version: 0.0.1   
     Author : Erenus Yildiz 
              Md. Nazmuddoha Ansary
@@ -56,16 +58,13 @@ Change The following Values in ***config.json***:
             "ID_END"         : 101
         }
 
-* run ```python3 create_dataset.py```
-
-![](/info/exec.png?raw=true)
+* run ```python3 create_dataset.py``` within the activated virtualenv
+> Ignore: Corrupt EXIF data Warning
 
 # Information
 * Train Data = 14000 
 * Test Data  = 11
 * Eval Data  = 4000
-* DataSet Size = 8.6 GiB
-* DataSet Creation Time ~= 2228s
 
 **ENVIRONMENT**  
 

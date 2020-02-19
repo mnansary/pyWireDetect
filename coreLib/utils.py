@@ -20,6 +20,7 @@ import cv2
 from PIL import Image as imgop
 import random
 import shutil
+import tensorflow as tf
 #---------------------------------------------------------------------------
 def readJson(file_name):
     return json.load(open(file_name))
@@ -54,22 +55,34 @@ class DataSet(object):
         self.img_dir    =   os.path.join(FLAGS.SRC_DIR,'images')
         self.ant_path   =   os.path.join(FLAGS.SRC_DIR,'annotations','via_region_data.json')
         self.mask_dir   =   create_dir(FLAGS.SRC_DIR,'masks')
+        
         self.ds_dir     =   create_dir(FLAGS.DS_DIR,'DataSet')
         self.train_dir  =   create_dir(self.ds_dir,'Train')
+        self.train_img  =   create_dir(self.train_dir,'images')
+        self.train_mask =   create_dir(self.train_dir,'masks')
+        
         self.eval_dir   =   create_dir(self.ds_dir,'Eval')
+        self.eval_img  =   create_dir(self.eval_dir,'images')
+        self.eval_mask =   create_dir(self.eval_dir,'masks')
+        
         self.test_dir   =   create_dir(self.ds_dir,'Test')
         self.test_img   =   create_dir(self.test_dir,'images')
-        self.test_mask  =   create_dir(self.test_dir,'mask')
+        self.test_mask  =   create_dir(self.test_dir,'masks')
+        
         self.img_dim    =   FLAGS.IMAGE_DIM
         self.nb_channels=   FLAGS.NB_CHANNELS
+        
         self.__nb_train =   FLAGS.NB_TRAIN
         self.__nb_eval  =   FLAGS.NB_EVAL
+        
         self.rot_angles =   [angle for angle in range(FLAGS.ROT_START,
                                                       FLAGS.ROT_STOP+FLAGS.ROT_STEP,
                                                       FLAGS.ROT_STEP)]
         self.fid        = FLAGS.FID
+        
         self.ids        = [i for i in range(FLAGS.ID_START,FLAGS.ID_END+1)]
         random.shuffle(self.ids)
+        
         self.__train_data = self.ids[:self.__nb_train]
         self.__eval_data  = self.ids[self.__nb_train:self.__nb_train+self.__nb_eval]
         self.__test_data  = self.ids[self.__nb_train+self.__nb_eval:]
@@ -103,18 +116,34 @@ class DataSet(object):
             y=np.array(y.transpose(imgop.FLIP_LEFT_RIGHT))
         return x,y
 
+    def __modifyMask(self,y):
+        by=np.zeros(y.shape[:2])
+        gy=np.dot(y[...,:3], [0.299, 0.587, 0.114])
+        by[gy>0]=255
+        by=by.astype('uint8')
+        return by
+
     def __saveTransposedData(self,rot_img,rot_gt,base_name,rot_angle,mode):
         for _fid in range(self.fid):
+            
             x,y=self.__getFlipDataById(rot_img,rot_gt,_fid)
-            data=np.concatenate((x,y),axis=1)
+            y  =self.__modifyMask(y)
             file_name='{}_fid-{}_angle-{}.png'.format(base_name,_fid,rot_angle)
+
             if mode=='train':
-                dpath=os.path.join(self.train_dir,file_name)
+                _img_path   =   os.path.join(self.train_img,file_name)
+                _mask_path  =   os.path.join(self.train_mask,file_name)
+            
             elif mode=='eval':
-                dpath=os.path.join(self.eval_dir,file_name)
+                _img_path   =   os.path.join(self.eval_img,file_name)
+                _mask_path  =   os.path.join(self.eval_mask,file_name)
+            
             else:
-                dpath=os.path.join(self.test_dir,file_name)
-            imageio.imsave(dpath,data)
+                pass
+
+            imageio.imsave(_img_path ,x)
+            imageio.imsave(_mask_path ,y)
+            
 
 
     def create(self,mode):
@@ -208,14 +237,65 @@ class DataSet(object):
                 missed.append(__filename)
                 LOG_INFO('ERROR:{}'.format(__filename),p_color='red')
 #--------------------------------------------------------------------------------------------------------------------------------------------------
-def createH5Data(data_paths,counter,save_dir,mode):
-    holder=[]
-    _dpath=os.path.join(save_dir,'{}_{}.h5'.format(mode,counter))
-    LOG_INFO(_dpath)
-    for __path in tqdm(data_paths):
-        data=np.array(imgop.open(__path))
-        data=np.expand_dims(data,axis=0)
-        holder.append(data)
-    _data=np.vstack(holder)
-    saveh5(_dpath,_data) 
+def _bytes_feature(value):
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+def _int64_feature(value):
+      return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+def _float_feature(value):
+      return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
+
+def to_tfrecord(image_paths,save_dir,mode,r_num):
+    '''
+    Creates tfrecords from Provided Image Paths
+    Arguments:
+    image_paths = List of Image Paths with Fixed Size (NOT THE WHOLE Dataset)
+    save_dir    = Tfrecords saving dir
+    mode        = Mode of data to be created
+    r_num       = number of record
+    '''
+    tfrecord_name='{}_{}.tfrecord'.format(mode,r_num)
+    tfrecord_path=os.path.join(save_dir,tfrecord_name)
+    LOG_INFO(tfrecord_path) 
+    with tf.io.TFRecordWriter(tfrecord_path) as writer:    
+        for image_path in tqdm(image_paths):
+            target_path=str(image_path).replace('images','masks')
+            with(open(image_path,'rb')) as fid:
+                image_png_bytes=fid.read()
+            with(open(target_path,'rb')) as fid:
+                target_png_bytes=fid.read()
+            data ={ 'image':_bytes_feature(image_png_bytes),
+                    'target':_bytes_feature(target_png_bytes)
+            }
+            features=tf.train.Features(feature=data)
+            example= tf.train.Example(features=features)
+            serialized=example.SerializeToString()
+            writer.write(serialized)   
 #--------------------------------------------------------------------------------------------------------------------------------------------------
+def data_input_fn(tf_dir,mode,BUFFER_SIZE,BATCH_SIZE,img_dim=256): 
+    
+    def _parser(example):
+        feature ={  'image'  : tf.io.FixedLenFeature([],tf.string) ,
+                    'target' : tf.io.FixedLenFeature([],tf.string)
+        }    
+        parsed_example=tf.io.parse_single_example(example,feature)
+        image_raw=parsed_example['image']
+        image=tf.image.decode_png(image_raw,channels=3)
+        image=tf.cast(image,tf.float32)/255.0
+        image=tf.reshape(image,(img_dim,img_dim,3))
+        
+        target_raw=parsed_example['target']
+        target=tf.image.decode_png(target_raw,channels=1)
+        target=tf.cast(target,tf.float32)/255.0
+        target=tf.reshape(target,(img_dim,img_dim,1))
+        
+        return image,target
+
+    file_paths=glob(os.path.join(tf_dir,mode,'*.tfrecord'))
+    dataset = tf.data.TFRecordDataset(file_paths)
+    dataset = dataset.map(_parser)
+    dataset = dataset.shuffle(BUFFER_SIZE,reshuffle_each_iteration=True)
+    dataset = dataset.repeat()
+    dataset = dataset.batch(BATCH_SIZE)
+    iterator= dataset.make_one_shot_iterator()
+    return iterator

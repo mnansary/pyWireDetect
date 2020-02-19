@@ -7,12 +7,13 @@ import os
 import numpy as np 
 import random
 import shutil
+from glob import glob
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import h5py
-from coreLib.utils import readJson,LOG_INFO,readh5,saveh5,DataSet,createH5Data,create_dir
+from coreLib.utils import readJson,LOG_INFO,readh5,saveh5,DataSet,create_dir
 import tensorflow as tf
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 import imageio
 #-----------------------------------------------------Load Config-------
 config_data=readJson('config.json')
@@ -54,49 +55,70 @@ def h5_debug(h5_dir):
 #--------------------------------------------------------------------------
 BATCH_SIZE=128
 NB_CHANNEL=3
-EPOCH=2
+EPOCH=3
 IMG_DIM=256
 BUFFER_SIZE=1024
-h5_dir=os.path.join(FLAGS.DS_DIR,'DataSet','H5','Eval')
 
-class generator:
-    def __call__(self, file):
-        with h5py.File(file, 'r') as hf:
-            for data in hf["data"]:
-                data=data.astype('float32')/255.0
-                img=data[:,:IMG_DIM]
-                tgt=data[:,IMG_DIM:]
-                yield img,tgt
+tf_dir=os.path.join(FLAGS.DS_DIR,'TFRecords')
 
-def data_input_fn(h5_dir):
-    flist=[os.path.join(h5_dir,_h5) for _h5 in os.listdir(h5_dir) if os.path.isfile(os.path.join(h5_dir,_h5))]
-    dataset = tf.data.Dataset.from_tensor_slices(flist)
-    dataset = dataset.repeat(EPOCH)
+def data_input_fn(tf_dir,mode,img_dim=256): 
+    
+    def _parser(example):
+        feature ={  'image'  : tf.io.FixedLenFeature([],tf.string) ,
+                    'target' : tf.io.FixedLenFeature([],tf.string)
+        }    
+        parsed_example=tf.io.parse_single_example(example,feature)
+        image_raw=parsed_example['image']
+        image=tf.image.decode_png(image_raw,channels=3)
+        image=tf.cast(image,tf.float32)/255.0
+        image=tf.reshape(image,(img_dim,img_dim,3))
+        
+        target_raw=parsed_example['target']
+        target=tf.image.decode_png(target_raw,channels=1)
+        target=tf.cast(target,tf.float32)/255.0
+        target=tf.reshape(target,(img_dim,img_dim,1))
+        
+        return image,target
+
+    file_paths=glob(os.path.join(tf_dir,mode,'*.tfrecord'))
+    dataset = tf.data.TFRecordDataset(file_paths)
+    dataset = dataset.map(_parser)
     dataset = dataset.shuffle(BUFFER_SIZE,reshuffle_each_iteration=True)
-    dataset = dataset.interleave(lambda filename: tf.data.Dataset.from_generator(
-                                generator(), 
-                                (tf.float32,tf.float32), 
-                                (tf.TensorShape([IMG_DIM,IMG_DIM,NB_CHANNEL]), 
-                                tf.TensorShape([IMG_DIM,IMG_DIM,NB_CHANNEL])),
-                                args=(filename,)))
+    dataset = dataset.repeat(EPOCH)
     dataset = dataset.batch(BATCH_SIZE)
-    return dataset
+    iterator= dataset.make_one_shot_iterator()
+    return iterator
 
-ds=data_input_fn(h5_dir)
+
+
+
+eval_iter=data_input_fn(tf_dir,"Eval")
+data=eval_iter.get_next()
 batch_num=0
 epch=0
 tryout_dir=create_dir(FLAGS.DS_DIR,'TRYOUT')
 epdir=create_dir(tryout_dir,str(epch))
-for imgs,tgts in tqdm(ds):
-    batch_num+=1
-    if batch_num==24:
-        epch+=1
-        batch_num=0
-        epdir=create_dir(tryout_dir,str(epch))
-    for x,y,n in zip(imgs,tgts,range(imgs.shape[0])):
-        dat=np.concatenate((x,y),axis=1)
-        dat=dat*255
-        dat=dat.astype('uint8')
-        dpath=os.path.join(epdir,'{}_{}.png'.format(batch_num,n))
-        imageio.imsave(dpath,dat)
+
+with tf.Session() as sess:
+    for _ in tqdm(range(72)):
+        imgs,tgts=sess.run(data)
+        batch_num+=1
+        if batch_num==25:
+            epch+=1
+            batch_num=0
+            epdir=create_dir(tryout_dir,str(epch))
+        for x,y,n in zip(imgs,tgts,range(imgs.shape[0])):
+            x=x*255
+            x=x.astype('uint8')
+            y=y*255
+            y=y.astype('uint8')
+            
+            xpath=os.path.join(epdir,'{}_{}.png'.format(batch_num,n))
+            ypath=os.path.join(epdir,'{}_{}_mask.png'.format(batch_num,n))
+            
+            imageio.imsave(xpath,x)
+            imageio.imsave(ypath,y)
+            
+        
+
 
