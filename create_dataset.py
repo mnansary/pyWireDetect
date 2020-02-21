@@ -58,13 +58,11 @@ def genTFRecords(mode,FLAGS):
 def main(FLAGS):
     st=time.time()
     DS=DataSet(FLAGS)
-    '''
     DS.createMasks()
     DS.create('eval')
     DS.create('test')
     DS.create('train')
     genTFRecords('Eval',FLAGS)
-    '''
     genTFRecords('Train',FLAGS)
     LOG_INFO('Time Taken:{}s'.format(round(time.time()-st)))
 
