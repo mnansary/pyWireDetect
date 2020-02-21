@@ -1,3 +1,7 @@
+class KerasObject:
+    def __init__(self, name=None):
+        self._name = name
+
 class Metric(KerasObject):
     pass
 
