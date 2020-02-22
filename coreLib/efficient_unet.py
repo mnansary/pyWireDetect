@@ -51,10 +51,13 @@ DENSE_KERNEL_INITIALIZER = {
 
 
 #--------------------------------Efficient Net Helpers---------------------------
-def get_swish():
-    def swish(x):
-        return x * tf.keras.backend.sigmoid(x)
-    return  swish
+class Swish(tf.keras.layers.Activation):
+    def __init__(self, activation, **kwargs):
+        super(Swish, self).__init__(activation, **kwargs)
+        self.__name__ = 'swish'
+ 
+def swish(x):
+      return x * tf.keras.backend.sigmoid(x)
 
 def get_dropout():
     class FixedDropout(tf.keras.layers.Dropout):
@@ -292,7 +295,7 @@ def EfficientUNet(width_coefficient,
     
     img_input = tf.keras.layers.Input(shape=input_shape)
     bn_axis = 3 
-    activation = get_swish()
+    activation = 'swish'
     # Build stem
     x = img_input
     x = tf.keras.layers.Conv2D(round_filters(32, width_coefficient, depth_divisor), 3,
@@ -391,6 +394,7 @@ def EfficientUNetB7(input_shape):
                         input_shape=input_shape,
                         pooling=None)
 
+tf.keras.utils.get_custom_objects().update({'swish': Swish(swish)})
 
 if __name__=='__main__':
     model=EfficientUNetB7((256,256,3))

@@ -27,9 +27,9 @@ def readJson(file_name):
 
 def saveh5(path,data):
     hf = h5py.File(path,'w')
-    hf.create_dataset('data',data=data)
+    hf.create_dataset('data',np.shape(data),h5py.h5t.STD_U8BE,data=data)
     hf.close()
-
+    
 def readh5(d_path):
     data=h5py.File(d_path, 'r')
     data = np.array(data['data'])
@@ -297,5 +297,4 @@ def data_input_fn(tf_dir,mode,BUFFER_SIZE,BATCH_SIZE,img_dim=256):
     dataset = dataset.shuffle(BUFFER_SIZE,reshuffle_each_iteration=True)
     dataset = dataset.repeat()
     dataset = dataset.batch(BATCH_SIZE)
-    iterator= dataset.make_one_shot_iterator()
-    return iterator
+    return dataset
