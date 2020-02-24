@@ -1,15 +1,18 @@
 {
     "SRC_DIR"        : "/media/ansary/DriveData/UPWORK/WireDetection/source/",
     "DS_DIR"         : "/media/ansary/DriveData/UPWORK/WireDetection/",
-    "IMAGE_DIM"      : 256,
+    "IMAGE_DIM"      : 512,
     "NB_CHANNELS"    : 3,
     "ROT_START"      : 0,
     "ROT_STOP"       : 45,
     "ROT_STEP"       : 5,
     "FID"            : 4,
-    "DATA_COUNT"     : 1024,
-    "NB_EVAL"        : 20,
-    "NB_TRAIN"       : 70,
+    "DATA_COUNT"     : 256,
+    "NB_EVAL"        : 10,
+    "NB_TRAIN"       : 80,
     "ID_START"       : 1,
-    "ID_END"         : 101
+    "ID_END"         : 101,
+    "TRAIN_COUNT"    : 20480,
+    "EVAL_COUNT"     : 2048,
+    "REPLICATE"      : 1
 }

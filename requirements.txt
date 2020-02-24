@@ -5,6 +5,7 @@ certifi==2019.11.28
 chardet==3.0.4
 cycler==0.10.0
 decorator==4.4.1
+efficientnet==1.0.0
 gast==0.2.2
 google-auth==1.11.2
 google-auth-oauthlib==0.4.1
@@ -12,6 +13,7 @@ google-pasta==0.1.8
 grpcio==1.27.2
 h5py==2.10.0
 idna==2.9
+image-classifiers==1.0.0
 imageio==2.6.1
 joblib==0.14.1
 Keras==2.3.1
@@ -41,6 +43,7 @@ rsa==4.0
 scikit-image==0.16.2
 scikit-learn==0.22.1
 scipy==1.4.1
+segmentation-models==1.0.1
 six==1.14.0
 tensorboard==2.1.0
 tensorflow==2.1.0

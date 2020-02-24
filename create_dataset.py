@@ -26,6 +26,10 @@ class FLAGS:
     NB_TRAIN        = config_data['NB_TRAIN']
     ID_START        = config_data['ID_START']
     ID_END          = config_data['ID_END']
+    TRAIN_COUNT     = config_data['TRAIN_COUNT']
+    EVAL_COUNT      = config_data['EVAL_COUNT']
+    REPLICATE       = config_data['REPLICATE']
+    
 #--------------------------------------------------------------------------
 
 def genTFRecords(mode,FLAGS):
@@ -35,35 +39,23 @@ def genTFRecords(mode,FLAGS):
     data_dir=os.path.join(FLAGS.DS_DIR,'DataSet',mode,'images')
     __paths=[os.path.join(data_dir,_file) for _file in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir,_file))]
     random.shuffle(__paths)
-    for i in range(0,len(__paths),FLAGS.DATA_COUNT):
+    for i in tqdm(range(0,len(__paths),FLAGS.DATA_COUNT)):
         image_paths= __paths[i:i+FLAGS.DATA_COUNT]
         random.shuffle(image_paths)        
         r_num=i // FLAGS.DATA_COUNT
-        if len(image_paths)==FLAGS.DATA_COUNT:
-            to_tfrecord(image_paths,mode_dir,mode,r_num)
-        else:
-            LOG_INFO('Testing Data Addition:{}'.format(mode))
-            dest_dir=create_dir(os.path.join(FLAGS.DS_DIR,'DataSet','Test'),'Augmented')
-            dest_img=create_dir(dest_dir,'images')
-            dest_mask=create_dir(dest_dir,'masks')
-            random.shuffle(image_paths)         
-            for __path in tqdm(image_paths):
-                base_name=os.path.basename(__path)
-                img_path=os.path.join(dest_img,base_name)
-                msk_path=os.path.join(dest_mask,base_name)
-                __mpath=str(__path).replace("images","masks")
-                shutil.copy(__path,img_path)
-                shutil.copy(__mpath,msk_path)
+        to_tfrecord(image_paths,mode_dir,mode,r_num)
               
 def main(FLAGS):
     st=time.time()
+    
     DS=DataSet(FLAGS)
     DS.createMasks()
+    DS.baseData()
     DS.create('eval')
-    DS.create('test')
     DS.create('train')
-    genTFRecords('Eval',FLAGS)
     genTFRecords('Train',FLAGS)
+    genTFRecords('Eval',FLAGS)
+    
     LOG_INFO('Time Taken:{}s'.format(round(time.time()-st)))
 
 
