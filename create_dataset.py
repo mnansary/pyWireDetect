@@ -17,10 +17,7 @@ class FLAGS:
     DS_DIR          = config_data['DS_DIR']
     IMAGE_DIM       = config_data['IMAGE_DIM']
     NB_CHANNELS     = config_data['NB_CHANNELS']
-    ROT_START       = config_data['ROT_START']
-    ROT_STOP        = config_data['ROT_STOP']
-    ROT_STEP        = config_data['ROT_STEP']
-    FID             = config_data['FID']
+    DIM_FACTOR      = config_data['DIM_FACTOR']
     DATA_COUNT      = config_data['DATA_COUNT']
     NB_EVAL         = config_data['NB_EVAL']
     NB_TRAIN        = config_data['NB_TRAIN']
@@ -33,7 +30,7 @@ class FLAGS:
 #--------------------------------------------------------------------------
 
 def genTFRecords(mode,FLAGS):
-    rec_dir=create_dir(FLAGS.DS_DIR,'TFRecords')
+    rec_dir=create_dir(FLAGS.DS_DIR,'WireDTF')
     mode_dir=create_dir(rec_dir,mode)
     LOG_INFO("Creating TFRecords:{}".format(mode_dir))
     data_dir=os.path.join(FLAGS.DS_DIR,'DataSet',mode,'images')

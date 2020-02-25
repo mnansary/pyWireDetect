@@ -48,12 +48,12 @@ def create_dir(base_dir,ext_name):
         os.mkdir(new_dir)
     return new_dir
 
-def nCr(n,r):
-    '''
-        returns the number of combinations taking r objects from n objects
-    '''
-    f = math.factorial
-    return f(n) // (f(r)*f(n-r))
+def random_combination(iterable, r):
+    "Random selection from itertools.combinations(iterable, r)"
+    pool = tuple(iterable)
+    n = len(pool)
+    indices = sorted(random.sample(range(n), r))
+    return tuple(pool[i] for i in indices)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 class DataSet(object):
@@ -83,15 +83,11 @@ class DataSet(object):
         # image params
         self.img_dim    =   FLAGS.IMAGE_DIM
         self.nb_channels=   FLAGS.NB_CHANNELS
+        self.dim_factor =   FLAGS.DIM_FACTOR
         # Train,Eval,Test split
         self.__nb_train =   FLAGS.NB_TRAIN
         self.__nb_eval  =   FLAGS.NB_EVAL
-        # allowed rotations for augmentation
-        self.rot_angles =   [angle for angle in range(FLAGS.ROT_START,
-                                                      FLAGS.ROT_STOP+FLAGS.ROT_STEP,
-                                                      FLAGS.ROT_STEP)]
-        # flips and saver identifier
-        self.fid        = FLAGS.FID
+        
         self.rs_start   = FLAGS.ID_END
         # source IDS for Train,Test,Eval
         self.ids        = [i for i in range(FLAGS.ID_START,FLAGS.ID_END+1)]
@@ -115,6 +111,7 @@ class DataSet(object):
             creates a binary mask from 3 channel mask
         '''
         # binary holder
+        y=np.array(y)
         by=np.zeros(y.shape[:2])
         # grey scale
         gy=np.dot(y[...,:3], [0.299, 0.587, 0.114])
@@ -138,16 +135,23 @@ class DataSet(object):
             x=imgop.open(img_path)
             y=imgop.open(gt_path)
             # process
-            x=np.array(x.resize((self.img_dim,self.img_dim)))
-            y=np.array(y.resize((self.img_dim,self.img_dim)))
-            y=self.__modifyMask(y)
-            # save paths
-            __img_path=   os.path.join(img_save,'{}.png'.format(iden))
-            __gt_path =   os.path.join(mask_save,'{}.png'.format(iden))  
-            # save
-            imageio.imsave(__img_path,x)
-            imageio.imsave(__gt_path,y)
-
+            x=x.resize((self.img_dim*self.dim_factor,self.img_dim*self.dim_factor))
+            y=y.resize((self.img_dim*self.dim_factor,self.img_dim*self.dim_factor))
+            y=imgop.fromarray(self.__modifyMask(y))
+            if mode=='test':
+                self.__saveTransposedData(x,y,img_save,mask_save,flag=False)
+            else:
+                for pxv in [0,self.img_dim//2]:
+                    for pxl in [0,self.img_dim//2]:
+                        self.rs_start+=1
+                        l=pxv
+                        r=pxv+self.img_dim//2
+                        t=pxl
+                        b=pxl+self.img_dim//2
+                        bbox=(l,t,r,b)
+                        _x=   x.crop(bbox).resize((self.img_dim,self.img_dim))	                
+                        _y=   y.crop(bbox).resize((self.img_dim,self.img_dim))
+                        self.__saveTransposedData(_x,_y,img_save,mask_save,flag=False)
 
     def baseData(self):
         '''
@@ -162,34 +166,31 @@ class DataSet(object):
         '''
             Returns flipped image and mask numpy data based on fid
         '''
-        if fid==0:# ORIGINAL
-            x=np.array(img)
-            y=np.array(gt)
-        elif fid==1:# Left Right Flip
-            x=np.array(img.transpose(imgop.FLIP_LEFT_RIGHT))
-            y=np.array(gt.transpose(imgop.FLIP_LEFT_RIGHT))
-        elif fid==2:# Up Down Flip
-            x=np.array(img.transpose(imgop.FLIP_TOP_BOTTOM))
-            y=np.array(gt.transpose(imgop.FLIP_TOP_BOTTOM))
-        else: # Mirror Flip
-            x=img.transpose(imgop.FLIP_TOP_BOTTOM)
-            x=np.array(x.transpose(imgop.FLIP_LEFT_RIGHT))
-            y=gt.transpose(imgop.FLIP_TOP_BOTTOM)
-            y=np.array(y.transpose(imgop.FLIP_LEFT_RIGHT))
-        return x,y
+        if fid==0:# ORIGINAL	        
+            x=np.array(img)	            
+            y=np.array(gt)	            
+        elif fid==1:# Left Right Flip	        
+            x=np.array(img.transpose(imgop.FLIP_LEFT_RIGHT))	            
+            y=np.array(gt.transpose(imgop.FLIP_LEFT_RIGHT))	            
+        elif fid==2:# Up Down Flip	        
+            x=np.array(img.transpose(imgop.FLIP_TOP_BOTTOM))	            
+            y=np.array(gt.transpose(imgop.FLIP_TOP_BOTTOM))	            
+        else: # Mirror Flip	        
+            x=img.transpose(imgop.FLIP_TOP_BOTTOM)	            
+            x=np.array(x.transpose(imgop.FLIP_LEFT_RIGHT))	            
+            y=gt.transpose(imgop.FLIP_TOP_BOTTOM)	            
+            y=np.array(y.transpose(imgop.FLIP_LEFT_RIGHT))	            
+        return x,y	            
 
-    
-
-    def __saveTransposedData(self,rot_img,rot_gt,_img_path,_mask_path):
-        '''
-            saves the rotated and flipped data
-        '''
-        _fid = random.randint(0,self.fid) 
+    def __saveTransposedData(self,_img,_gt,_img_path,_mask_path,flag=True):
+        _fid = random.randint(0,4) 
         self.rs_start+=1
-        x,y=self.__getFlipDataById(rot_img,rot_gt,_fid)
+        if flag:
+            _img,_gt=self.__getFlipDataById(_img,_gt,_fid)
+        self.rs_start+=1
         file_name='{}.png'.format(self.rs_start)
-        imageio.imsave(os.path.join(_img_path,file_name) ,x)
-        imageio.imsave(os.path.join(_mask_path,file_name) ,y)
+        imageio.imsave(os.path.join(_img_path,file_name) ,np.array(_img))
+        imageio.imsave(os.path.join(_mask_path,file_name) ,np.array(_gt))
     
     def __createDatafromComb(self,comb,img_paths,_dpath):
         '''
@@ -213,11 +214,6 @@ class DataSet(object):
         y=imgop.fromarray(y)
         y=y.resize((self.img_dim,self.img_dim))
         
-        rot_angle=random.choice(self.rot_angles)
-        
-        x  =   x.rotate(rot_angle)
-        y  =   y.rotate(rot_angle)
-        
         self.__saveTransposedData(x,y,os.path.join(_dpath,'images'),os.path.join(_dpath,'masks'))   
 
    
@@ -239,37 +235,16 @@ class DataSet(object):
         vals=[i for i in range(len(img_paths))]
         
         if mode=='eval':
-
-            for comb in tqdm(itertools.combinations(vals,4),total=nCr(len(vals),4)):
-                self.__createDatafromComb(comb,img_paths,_dpath)
-            # eval data not sufficient enough
-            needed_data=self.nb_eval- nCr(len(vals),4)- self.__nb_eval
-            _paths=[_path for _path in glob(os.path.join(_dpath,'images','*.*'))]
-            count=0
-            for _path in tqdm(_paths):
-                x=imgop.open(_path)
-                y=imgop.open(str(_path).replace('images','masks'))
-                for rot_angle in self.rot_angles:
-                    x  =   x.rotate(rot_angle)
-                    y  =   y.rotate(rot_angle)
-                    self.__saveTransposedData(x,y,os.path.join(_dpath,'images'),os.path.join(_dpath,'masks'))   
-                    count+=1
-                    if count==needed_data:
-                        LOG_INFO('Generated Necessary Data !')
-                        break
-                if count==needed_data:
-                        break
-                    
+            needed_data=self.nb_eval- (self.__nb_eval*self.dim_factor)
+            
         elif mode=='train':
-            needed_data=self.nb_train-self.__nb_train
-            count=0
-            for comb in tqdm(itertools.combinations(vals,4),total=needed_data):
-                self.__createDatafromComb(comb,img_paths,_dpath)
-                count+=1
-                if count==needed_data:
-                    LOG_INFO('Generated Necessary Data !')
-                    break
-
+            needed_data=self.nb_train-(self.__nb_train*self.dim_factor)
+        
+        for i in tqdm(range(needed_data)):
+            comb=random_combination(vals,self.dim_factor)
+            self.__createDatafromComb(comb,img_paths,_dpath)
+        
+           
             
              
     

@@ -78,7 +78,7 @@ Change The following Values in ***config.json***:
 * run ```python3 create_dataset.py``` within the activated virtual environment
 > Ignore: Corrupt EXIF data Warning
 
-* upon successfull execution the following number of images will created in **{DS_DIR}/DataSet** folder: 
+* upon successfull execution the following number of images will be created in **{DS_DIR}/DataSet** folder: 
     * Train Data = 20480 
     * Test Data  = 11
     * Eval Data  = 2048
