@@ -1,10 +1,9 @@
 # pyWireDetect
 Wire detection using synthetic data and dilated convolutional networks
 
-Ref: UPWORK
 
 
-    Version: 0.0.2   
+    Version: 1.0.0   
     Author : Erenus Yildiz ,Md. Nazmuddoha Ansary
                   
 ![](/info/src_img/python.ico?raw=true )
@@ -12,116 +11,196 @@ Ref: UPWORK
 ![](/info/src_img/keras.ico?raw=true)
 ![](/info/src_img/col.ico?raw=true)
 
-# Version and Requirements
-Major libraries:
-*   image-classifiers==1.0.0
-*   imageio==2.6.1
-*   Keras==2.3.1
-*   matplotlib==3.1.3
-*   numpy==1.18.1
-*   opencv-python==4.2.0.32
-*   Pillow==7.0.0
-*   scikit-image==0.16.2
-*   scikit-learn==0.22.1
-*   scipy==1.4.1
-*   segmentation-models==1.0.1
-*   tensorflow==2.1.0
-*   termcolor==1.1.0
-*   tqdm==4.42.1
+# SETUP
+* Min Version: **python > 3.5**
+* Tested on  : **python 3.6.9**
 
-Setup:
+## IMPORTANT
+Before cloning or executing any script the following has to be ensured in the **parent system**:
+*  There should not exist any virtualenv named **wirevenv**
+*  To ensure this,install jupyter in the **parent system** (not in any **virtualenv**) by:
+    * ```$:~  pip3 install --upgrade pip``` 
+    * ```$:~  pip3 install jupyter```
+* See the list of kernels 
+    * ```$:~  jupyter kernelspec list```
+* **IF THERE EXISTS A PRE-EXISTING KERNEL NAMED** -->  **wirevenv**
+    * ```$:~  jupyter kernelspec remove wirevenv```
+* Confirm Deletion by :
+    * ```$:~  jupyter kernelspec list```
 
-* create a virtualenvironment: for example-  ```$:~ virtualenv venv```
-* activate the virtualenvironment: ```$:~ source venv/bin/activate```
-* ```pip3 install -r requirements.txt```: depending on permission **--user** flag may be needed 
+## CLONING:
+* Git clone this repo to a location where there is no additional read-write permission conflict **(THIS WILL HIGHLY DEPEND ON THE PARENT SYSTEM)**
+* An example place can be: ```/home/{user_name}/WireDetect/```
+* ```$:~  git clone https://github.com/mnansary/pyWireDetect.git```
 
-#  DataSet
+## Environment Setup:
+* create a virtualenvironment in the cloned repo   
+    * ```WireDetect/pyWireDetect$:~    virtualenv wirevenv```
+* activate the virtualenvironment: 
+    * ```(wirevenv)WireDetect/pyWireDetect$:~    source wirevenv/bin/activate```
+* Upgrade pip:
+    * ```(wirevenv)WireDetect/pyWireDetect$:~    pip3 install --upgrade pip``` 
+* Install requirements:
+    * ```(wirevenv)WireDetect/pyWireDetect$:~    pip3 install -r requirements.txt```
+    * depending on permission **--user** flag may be needed 
+* Add **wirevenv** to jupyter:
+    * ```(wirevenv)WireDetect/pyWireDetect$:~    python3 -m ipykernel install --user --name=wirevenv``` 
+* Confirm Addition by :
+    * ```(wirevenv)WireDetect/pyWireDetect$:~    jupyter kernelspec list```
+ 
+     
 
-Change The following Values in ***config.json***:
-* ```SRC_DIR``` : The absolute path to the source folder which should contain the **images** and **annotations** folder which would have the following tree:
-        
-        source
-        ├── annotations
-        │   ├── ready_cleaned.csv
-        │   └── via_region_data.json
-        └── images
-            ├── 100.jpg
-            ├── 101.jpg
-            ├── 10.jpg
-            ├── 11.jpg
-            ├── 12.jpg
-            ├── .......
+#  DataSet Creation
 
-* ```DS_DIR``` : Location where the **DataSet** should be created with **Test**,**Train** and **Eval** split.
+* Download the [FINAL DATASET]() <-- TO BE ADDED AFTER FINILISING DATASET
+* The extracted folder should have a **wire_set** folder which has the following tree: 
+  
+        wire_set
+        ├── test
+        │   ├── images
+        │   │   ├── xx.jpg
+        ..................
+        │   │   ├── xx.jpg
+        │   │   └── xx.jpg
+        │   └── masks
+        │       ├── xx.jpg
+        ..................
+        │       ├── xx.jpg
+        │       └── xx.jpg
+        ├── train
+        │   ├── images
+        │   │   ├── xx.jpg
+        ..................
+        │   │   ├── xx.jpg
+        │   │   └── xx.jpg
+        │   └── masks
+        │       ├── xx.jpg
+        ....................
+        │       ├── xx.jpg
+        │       └── xx.jpg
+        └── val
+            ├── images
+            │   ├── xx.jpg
+            ...............
+            │   └── xx.jpg
+            └── masks
+                ├── xx.jpg
+                ...........
+                └── xx.jpg
 
-* An example config will look like as follows:
+* Copy the **wire_set** folder to the git repo (**pyWireDetect**) so that the **datagen.ipynb** and **wire_set** are under the same folder. I.E- the repo tree should update to show as: 
 
-        {
-            "SRC_DIR"        : "/media/ansary/DriveData/UPWORK/WireDetection/source/",
-            "DS_DIR"         : "/media/ansary/DriveData/UPWORK/WireDetection/",
-            "IMAGE_DIM"      : 512,
-            "NB_CHANNELS"    : 3,
-            "ROT_START"      : 0,
-            "ROT_STOP"       : 45,
-            "ROT_STEP"       : 5,
-            "FID"            : 4,
-            "DATA_COUNT"     : 256,
-            "NB_EVAL"        : 10,
-            "NB_TRAIN"       : 80,
-            "ID_START"       : 1,
-            "ID_END"         : 101,
-            "TRAIN_COUNT"    : 20480,
-            "EVAL_COUNT"     : 2048,
-            "REPLICATE"      : 1
-        }
+        ├── datagen.ipynb
+        ├── wire_set
+        ............
 
-* run ```python3 create_dataset.py``` within the activated virtual environment
-> Ignore: Corrupt EXIF data Warning
+* Move The **test** folder in **wire_set** to **TPU_COLAB** folder. The **wire_set** folder should now only contain **train** and **val** folders
 
-* upon successfull execution the following number of images will be created in **{DS_DIR}/DataSet** folder: 
-    * Train Data = 20480 
-    * Test Data  = 11
-    * Eval Data  = 2048
+* Open the repo in **jupyter-notebook** within the activated virtualenv:
+    * ```(wirevenv)WireDetect/pyWireDetect$:~  jupyter-notebook```
+* Select **wirevenv** as the kernel for **datagen.ipynb**
 
-* The **DataSet** folder will have the following folder tree:
+* Run all the blocks in **datagen.ipynb**
+
+* Upon Successfull Execution The **DataSet** folder now created should have the following tree with populated data:
 
         DataSet
         ├── Eval
         │   ├── images
         │   └── masks
-        ├── Test
+        ├── Train
         │   ├── images
         │   └── masks
-        └── Train
-            ├── images
-            └── masks
+        └── WireDTF
+            ├── Eval
+            └── Train
+
+# Training:
+
+## TPU COLAB
+![](/info/src_img/tpu.ico?raw=true) 
+> TPU’s have been recently added to the Google Colab portfolio making it even more attractive for quick-and-dirty machine learning projects when your own local processing units are just not fast enough. While the Tesla K80 available in Google Colab delivers respectable 1.87 TFlops and has 12GB RAM, the TPUv2 available from within Google Colab comes with a whopping 180 TFlops, give or take. It also comes with 64 GB High Bandwidth Memory (HBM). 
+
+* Create A folder named **WIRE_DETECTION** (in all caps) in you google drive
+* Upload the folder **TPU_COLAB** into **WIRE_DETECTION** folder. The **TPU_COLAB** should have the following folder tree before Uploding:
+
+        ├── model1.ipynb
+        ├── model2.ipynb
+        ├── model3.ipynb
+        ├── model4.ipynb
+        ├── model_weights
+        ├── test
+        └── train.ipynb
+
+## SOTA MODELS (SELECTED)
+* The selected SOTA models for training and scoring are as follows:
+    * **model1.ipynb** : 'efficientnetb7'
+    * **model2.ipynb** : 'inceptionv3'
+    * **model3.ipynb** : 'inceptionresnetv2'
+    * **model4.ipynb** : 'densenet201'
+
+* In order to train and evaluate a **selected SOTA** model, open the uploaded **model{x}.ipynb** in google colab
+* Go To **Edit**>**Notebook Settings** > **Hardware Accelerator** select **TPU**
+* Run the cell **MOUNT GOOGLE Drive** only
+
+![](/info/mount.png?raw=true)
+
+* Upon Successfull mount run the cell **Change your working directory**
+
+![](/info/cd.png?raw=true)
+
+* If both **Mounting** and **Directory Change** are successfull, Go To **Runtime**>**Restart and run all**
+
+* Upon successfull run the model predictions on test data will be displayed within the notebook with **SSIM** and **IoU/F1** score summary
+
+* The trained model will be saved at **WIRE_DETECTION**/**TPU_COLAB**/**model_weights**/**model{x}.h5** in **google drive**
+
+* The predicted masks can be found at **WIRE_DETECTION**/**TPU_COLAB**/**test**/**preds**/**model{x}**/ in **google drive**
+
+## train.ipynb
+* The **train.ipynb** is used to train other models 
+* Available SOTA model identifiers:
+
+| Model Type    | Identifiers   |
+| ------------- | ------------- |
+|   VGG	        |'vgg16' 'vgg19'|
+|   ResNet      |	'resnet18' 'resnet34' 'resnet50' 'resnet101' 'resnet152'|
+|   SE-ResNet   |	'seresnet18' 'seresnet34' 'seresnet50' 'seresnet101' 'seresnet152'|
+|   ResNeXt     |	'resnext50' 'resnext101'|
+|   SE-ResNeXt  |	'seresnext50' 'seresnext101'|
+|   SENet154    |	'senet154'|
+|   DenseNet    |	'densenet121' 'densenet169' 'densenet201'|
+|   Inception   |	'inceptionv3' 'inceptionresnetv2'|
+|   MobileNet   |	'mobilenet' 'mobilenetv2'|
+|   EfficientNet|	'efficientnetb0' 'efficientnetb1' 'efficientnetb2' 'efficientnetb3' 'efficientnetb4' 'efficientnetb5' 'efficientnetb6' 'efficientnetb7'|
+
+The process for training is same as before with exception of **MODEL SPEC** cell execution
+
+* Select The model you want to train  
+![](/info/specB.png?raw=true)
+* Copy the model **identifier** with **single quotes** to **model_name**. i.e- for example to train the **ResNet50** model you need to copy **'resnet50'** (with quotes)
+![](/info/specC.png?raw=true)
+
+* After selection:
+    *  **MOUNT GOOGLE Drive** 
+    *  **Change your working directory**
+    *  **Runtime**>**Restart and run all**
+
+* The trained model will be saved at **WIRE_DETECTION**/**TPU_COLAB**/**model_weights**/**{identifier}.h5** in **google drive**
+
+* The predicted masks can be found at **WIRE_DETECTION**/**TPU_COLAB**/**test**/**preds**/**{IDENTIFIER}**/ in **google drive**
 
 
-* The **{DS_DIR}/TFRecords** folder contains all the **Train** and **Eval** data in **.tfrecord** format
+* The model arch is the famous SOTA arch **Unet**
 
-        TFRecords
-        ├── Eval
-        │   ├── Eval_0.tfrecord
-        │   ├── Eval_1.tfrecord
-        │   ...................
-        |   ...................
-        │   ├── Eval_6.tfrecord
-        │   └── Eval_7.tfrecord
-        └── Train
-            ├── Train_0.tfrecord
-            ├── Train_10.tfrecord
-            .....................
-            .....................
-            ├── Train_7.tfrecord
-            ├── Train_8.tfrecord
-            └── Train_9.tfrecord
+![](/info/arch.png?raw=true)
 
-
-**ENVIRONMENT**  
+# EXECUTION ENVIRONMENT 
 
     OS          : Ubuntu 18.04.3 LTS (64-bit) Bionic Beaver        
     Memory      : 7.7 GiB  
     Processor   : Intel® Core™ i5-8250U CPU @ 1.60GHz × 8    
     Graphics    : Intel® UHD Graphics 620 (Kabylake GT2)  
     Gnome       : 3.28.2  
+
 
