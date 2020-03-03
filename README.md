@@ -37,7 +37,7 @@ Before cloning or executing any script the following has to be ensured in the **
 * create a virtualenvironment in the cloned repo   
     * ```WireDetect/pyWireDetect$:~    virtualenv wirevenv```
 * activate the virtualenvironment: 
-    * ```(wirevenv)WireDetect/pyWireDetect$:~    source wirevenv/bin/activate```
+    * ```WireDetect/pyWireDetect$:~    source wirevenv/bin/activate```
 * Upgrade pip:
     * ```(wirevenv)WireDetect/pyWireDetect$:~    pip3 install --upgrade pip``` 
 * Install requirements:
