@@ -135,3 +135,8 @@ wirevenv/
 DataSet/
 wire_set/
 TPU_COLAB/test/
+TESTING/weights/*.h5
+TESTING/images/*.png
+TESTING/images/*.jpg
+TESTING/preds/*.png
+
