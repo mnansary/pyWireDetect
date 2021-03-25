@@ -69,7 +69,7 @@ pyrsistent==0.15.7
 python-dateutil==2.8.1
 python-utils==2.3.0
 PyWavelets==1.1.1
-PyYAML==5.3
+PyYAML==5.4
 pyzmq==19.0.0
 qtconsole==4.6.0
 requests==2.23.0
